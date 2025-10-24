@@ -1,4 +1,4 @@
-# PowerShell script for launching Discord with restrictions bypass
+﻿# PowerShell script for launching Discord with restrictions bypass
 # Architecture: automatic download, launch and bypass completion
 # Version: zapret-discord-youtube-1.8.5
 
@@ -22,46 +22,144 @@ $TempDir = Join-Path $env:TEMP "DiscordBypass_$(Get-Date -Format 'yyyyMMdd_HHmms
 $ZipPath = Join-Path $TempDir "zapret-discord-youtube-1.8.5.zip"
 $ExtractDir = Join-Path $TempDir "zapret-discord-youtube-1.8.5"
 
-# Function to create and show modal notification
+# Function to create and show modal notification with Discord dark theme and modern design
 function Show-ModalNotification {
     param(
-        [string]$Message = "Подождите, подготавливаем для вас...",
+        [string]$Message = "Подготовка Discord к запуску...",
         [ref]$FormReference
     )
     
+    # Set UTF-8 encoding for proper Cyrillic display
+    [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+    
     # Add assembly for Windows Forms
     Add-Type -AssemblyName System.Windows.Forms
+    Add-Type -AssemblyName System.Drawing
+    
+    # Discord dark theme colors
+    $darkBackground = [System.Drawing.Color]::FromArgb(47, 49, 54)      # #2F3136 - Discord background
+    $darkText = [System.Drawing.Color]::FromArgb(220, 221, 222)         # #DCDDDE - Discord text
+    $darkAccent = [System.Drawing.Color]::FromArgb(88, 101, 242)        # #5865F2 - Discord Blurple
     
     # Create form
     $form = New-Object System.Windows.Forms.Form
-    $form.Text = "Discord Bypass"
-    $form.Size = New-Object System.Drawing.Size(400, 200)
+    $form.Text = "Discord"
+    $form.Size = New-Object System.Drawing.Size(400, 150)
     $form.StartPosition = "CenterScreen"
     $form.TopMost = $true
-    $form.FormBorderStyle = "FixedDialog"
+    $form.FormBorderStyle = "None"  # Modern borderless design
     $form.MaximizeBox = $false
     $form.MinimizeBox = $false
     $form.ShowInTaskbar = $false
-    $form.BackColor = [System.Drawing.Color]::White
+    $form.BackColor = $darkBackground
+    
+    # Add rounded corners effect (optional, for Windows 11 style)
+    try {
+        # This requires Windows 10 version 1809 or later
+        Add-Type -TypeDefinition @"
+        using System;
+        using System.Runtime.InteropServices;
+        public class RoundedCorners {
+            [DllImport("dwmapi.dll")]
+            public static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int attrValue, int attrSize);
+            public const int DWMWA_WINDOW_CORNER_PREFERENCE = 33;
+            public const int DWMWCP_ROUND = 2;
+        }
+"@
+        $hwnd = $form.Handle
+        $preference = 2  # DWMWCP_ROUND
+        [RoundedCorners]::DwmSetWindowAttribute($hwnd, 33, [ref]$preference, 4)
+    }
+    catch {
+        # Ignore if rounded corners are not supported
+    }
+    
+    # Create accent bar at the top (Discord style)
+    $accentBar = New-Object System.Windows.Forms.Panel
+    $accentBar.Size = New-Object System.Drawing.Size(400, 4)
+    $accentBar.Location = New-Object System.Drawing.Point(0, 0)
+    $accentBar.BackColor = $darkAccent
+    $form.Controls.Add($accentBar)
     
     # Create label with message
     $label = New-Object System.Windows.Forms.Label
     $label.Text = $Message
-    $label.AutoSize = $true
-    $label.Font = New-Object System.Drawing.Font("Microsoft Sans Serif", 12, [System.Drawing.FontStyle]::Regular)
-    $label.ForeColor = [System.Drawing.Color]::Black
-    $label.Location = New-Object System.Drawing.Point(20, 60)
-    $label.Size = New-Object System.Drawing.Size(350, 40)
+    $label.Font = New-Object System.Drawing.Font("Segoe UI", 11, [System.Drawing.FontStyle]::Regular)
+    $label.ForeColor = $darkText
+    $label.Location = New-Object System.Drawing.Point(20, 40)
+    $label.Size = New-Object System.Drawing.Size(360, 80)
+    $label.AutoSize = $false
     $label.TextAlign = [System.Drawing.ContentAlignment]::MiddleCenter
-    
-    # Add label to form
     $form.Controls.Add($label)
+    
+    # Variables for dragging
+    $script:isDragging = $false
+    $script:dragStartPoint = New-Object System.Drawing.Point(0, 0)
+    
+    # Add mouse down event for dragging
+    $form.Add_MouseDown({
+        param($sender, $e)
+        if ($e.Button -eq [System.Windows.Forms.MouseButtons]::Left) {
+            $script:isDragging = $true
+            $script:dragStartPoint = $e.Location
+        }
+    })
+    
+    # Add mouse move event for dragging
+    $form.Add_MouseMove({
+        param($sender, $e)
+        if ($script:isDragging) {
+            $currentLocation = $form.Location
+            $newX = $currentLocation.X + ($e.X - $script:dragStartPoint.X)
+            $newY = $currentLocation.Y + ($e.Y - $script:dragStartPoint.Y)
+            $form.Location = New-Object System.Drawing.Point($newX, $newY)
+        }
+    })
+    
+    # Add mouse up event to stop dragging
+    $form.Add_MouseUp({
+        param($sender, $e)
+        if ($e.Button -eq [System.Windows.Forms.MouseButtons]::Left) {
+            $script:isDragging = $false
+        }
+    })
+    
+    # Allow dragging from label as well
+    $label.Add_MouseDown({
+        param($sender, $e)
+        if ($e.Button -eq [System.Windows.Forms.MouseButtons]::Left) {
+            $script:isDragging = $true
+            # Calculate relative position to form
+            $formLocation = $form.PointToClient([System.Windows.Forms.Cursor]::Position)
+            $script:dragStartPoint = $formLocation
+        }
+    })
+    
+    $label.Add_MouseMove({
+        param($sender, $e)
+        if ($script:isDragging) {
+            $currentScreenPos = [System.Windows.Forms.Cursor]::Position
+            $currentLocation = $form.Location
+            $formClientPoint = $form.PointToClient($currentScreenPos)
+            $newX = $currentLocation.X + ($formClientPoint.X - $script:dragStartPoint.X)
+            $newY = $currentLocation.Y + ($formClientPoint.Y - $script:dragStartPoint.Y)
+            $form.Location = New-Object System.Drawing.Point($newX, $newY)
+        }
+    })
+    
+    $label.Add_MouseUp({
+        param($sender, $e)
+        if ($e.Button -eq [System.Windows.Forms.MouseButtons]::Left) {
+            $script:isDragging = $false
+        }
+    })
     
     # Store form reference
     $FormReference.Value = $form
     
-    # Show form as modal
+    # Show form
     $form.Show() | Out-Null
+    $form.Refresh()
     
     # Return form object
     return $form
@@ -342,7 +440,7 @@ function Modify-BatchFileForHiddenExecution {
     
     # Show modal notification
     $notificationForm = $null
-    Show-ModalNotification -Message "Подождите, подготавливаем для вас..." -FormReference ([ref]$notificationForm)
+    Show-ModalNotification -Message "Подготовка Discord к запуску..." -FormReference ([ref]$notificationForm)
     
     Write-LogMessage "Modifying batch file for hidden execution: $BatchFilePath" "INFO"
     
