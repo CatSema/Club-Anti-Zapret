@@ -22,6 +22,62 @@ $TempDir = Join-Path $env:TEMP "DiscordBypass_$(Get-Date -Format 'yyyyMMdd_HHmms
 $ZipPath = Join-Path $TempDir "zapret-discord-youtube-1.8.5.zip"
 $ExtractDir = Join-Path $TempDir "zapret-discord-youtube-1.8.5"
 
+# Function to create and show modal notification
+function Show-ModalNotification {
+    param(
+        [string]$Message = "Подождите, подготавливаем для вас...",
+        [ref]$FormReference
+    )
+    
+    # Add assembly for Windows Forms
+    Add-Type -AssemblyName System.Windows.Forms
+    
+    # Create form
+    $form = New-Object System.Windows.Forms.Form
+    $form.Text = "Discord Bypass"
+    $form.Size = New-Object System.Drawing.Size(400, 200)
+    $form.StartPosition = "CenterScreen"
+    $form.TopMost = $true
+    $form.FormBorderStyle = "FixedDialog"
+    $form.MaximizeBox = $false
+    $form.MinimizeBox = $false
+    $form.ShowInTaskbar = $false
+    $form.BackColor = [System.Drawing.Color]::White
+    
+    # Create label with message
+    $label = New-Object System.Windows.Forms.Label
+    $label.Text = $Message
+    $label.AutoSize = $true
+    $label.Font = New-Object System.Drawing.Font("Microsoft Sans Serif", 12, [System.Drawing.FontStyle]::Regular)
+    $label.ForeColor = [System.Drawing.Color]::Black
+    $label.Location = New-Object System.Drawing.Point(20, 60)
+    $label.Size = New-Object System.Drawing.Size(350, 40)
+    $label.TextAlign = [System.Drawing.ContentAlignment]::MiddleCenter
+    
+    # Add label to form
+    $form.Controls.Add($label)
+    
+    # Store form reference
+    $FormReference.Value = $form
+    
+    # Show form as modal
+    $form.Show() | Out-Null
+    
+    # Return form object
+    return $form
+}
+
+# Function to hide modal notification
+function Hide-ModalNotification {
+    param(
+        [System.Windows.Forms.Form]$Form
+    )
+    
+    if ($Form) {
+        $Form.Close()
+        $Form.Dispose()
+    }
+}
 # Create temporary directory before using it
 if (!(Test-Path $TempDir)) {
     New-Item -ItemType Directory -Path $TempDir -Force | Out-Null
@@ -283,6 +339,10 @@ function Modify-BatchFileForHiddenExecution {
     param(
         [string]$BatchFilePath
     )
+    
+    # Show modal notification
+    $notificationForm = $null
+    Show-ModalNotification -Message "Подождите, подготавливаем для вас..." -FormReference ([ref]$notificationForm)
     
     Write-LogMessage "Modifying batch file for hidden execution: $BatchFilePath" "INFO"
     
@@ -642,6 +702,7 @@ try {
                 Write-LogMessage "Error closing Discord process (ID: $($proc.Id)): $($_.Exception.Message)" "WARN"
             }
         }
+        
         Start-Sleep 5  # Increased sleep time to allow processes to close properly
         
         # Double-check that processes have actually closed
@@ -655,6 +716,7 @@ try {
                 return $false
             }
         }
+        
         if ($stillRunning) {
             Write-LogMessage "Some Discord processes did not close gracefully, attempting force termination" "WARN"
             $stillRunning | ForEach-Object {
@@ -682,6 +744,11 @@ try {
             }
             Start-Sleep 2
         }
+    }
+    
+    # Hide modal notification after Discord is launched
+    if ($notificationForm) {
+        Hide-ModalNotification -Form $notificationForm
     }
 
     # Launch Discord
