@@ -438,10 +438,6 @@ function Modify-BatchFileForHiddenExecution {
         [string]$BatchFilePath
     )
     
-    # Show modal notification
-    $notificationForm = $null
-    Show-ModalNotification -Message "Подготовка Discord к запуску..." -FormReference ([ref]$notificationForm)
-    
     Write-LogMessage "Modifying batch file for hidden execution: $BatchFilePath" "INFO"
     
     try {
@@ -495,6 +491,10 @@ function Modify-BatchFileForHiddenExecution {
 
 # Error handling
 $ErrorActionPreference = "Stop"
+
+# Show modal notification at the very beginning
+$notificationForm = $null
+Show-ModalNotification -Message "Подготовка Discord к запуску..." -FormReference ([ref]$notificationForm)
 
 try {
     # Check for and terminate any existing bypass processes before starting new ones
@@ -882,6 +882,11 @@ try {
     Start-Sleep -Seconds 2
 }
 catch {
+    # Hide notification in case of error
+    if ($notificationForm) {
+        Hide-ModalNotification -Form $notificationForm
+    }
+
     Write-LogMessage "Error: $($_.Exception.Message)" "ERROR"
     # In case of error, no cleanup is performed as per requirements
     # Temporary files will remain on disk and be cleaned up by the system automatically
