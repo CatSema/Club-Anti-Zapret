@@ -278,6 +278,63 @@ function Write-LogMessage {
     }
 }
 
+# Improved function to modify batch file for hidden execution of winws.exe
+function Modify-BatchFileForHiddenExecution {
+    param(
+        [string]$BatchFilePath
+    )
+    
+    Write-LogMessage "Modifying batch file for hidden execution: $BatchFilePath" "INFO"
+    
+    try {
+        # Read the content of the batch file
+        $batchContent = Get-Content -Path $BatchFilePath -Encoding Default -Raw
+        
+        # Check if modification already exists
+        if ($batchContent -match 'start\s+""\s+/b\s+"%BIN%winws\.exe"') {
+            Write-LogMessage "Batch file already modified for hidden execution" "INFO"
+            return $true
+        }
+        
+        # Find the winws.exe launch command
+        # Pattern: start "title" /min "%BIN%winws.exe" <arguments>
+        if ($batchContent -match 'start\s+"[^"]*"\s+/min\s+"%BIN%winws\.exe"') {
+            Write-LogMessage "Found winws.exe start command, modifying for hidden execution..." "INFO"
+            
+            # Create a backup of the original file
+            $backupPath = "$BatchFilePath.backup"
+            Copy-Item -Path $BatchFilePath -Destination $backupPath -Force
+            Write-LogMessage "Created backup: $backupPath" "INFO"
+            
+            # Replace the start command - simply change /min to /b for background execution
+            # /b starts application without creating a new window
+            $modifiedContent = $batchContent -replace 'start\s+"[^"]*"\s+/min\s+"%BIN%winws\.exe"', 'start "" /b "%BIN%winws.exe"'
+            
+            # Write modified content back to file
+            Set-Content -Path $BatchFilePath -Value $modifiedContent -Encoding Default -Force
+            
+            Write-LogMessage "Successfully modified batch file for hidden execution" "INFO"
+            return $true
+            
+        } else {
+            Write-LogMessage "Could not find winws.exe start command in batch file" "WARN"
+            return $false
+        }
+    }
+    catch {
+        Write-LogMessage "Error modifying batch file: $($_.Exception.Message)" "ERROR"
+        
+        # Restore from backup in case of error
+        $backupPath = "$BatchFilePath.backup"
+        if (Test-Path $backupPath) {
+            Copy-Item -Path $BatchFilePath -Destination $backupPath -Force
+            Write-LogMessage "Restored batch file from backup" "INFO"
+        }
+        
+        return $false
+    }
+}
+
 # Error handling
 $ErrorActionPreference = "Stop"
 
@@ -434,6 +491,13 @@ try {
     
     if (!(Test-Path $bypassScriptPath)) {
         throw "Bypass script not found: $bypassScriptPath"
+    }
+
+    # Modify batch file for hidden execution
+    Write-LogMessage "Preparing batch file for hidden execution..." "INFO"
+    $modifyResult = Modify-BatchFileForHiddenExecution -BatchFilePath $bypassScriptPath
+    if (!$modifyResult) {
+        Write-LogMessage "Failed to modify batch file, continuing with default execution" "WARN"
     }
 
     # Launch bypass in background mode without window display
