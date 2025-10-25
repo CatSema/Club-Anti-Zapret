@@ -1,12 +1,12 @@
 # Configuration
-$GitHubScriptUrl = "https://raw.githubusercontent.com/CatSema/Club-Anti-Zapret/refs/heads/main/DiscordBypass.ps1"
-$LocalScriptDir = "$env:LOCALAPPDATA\DiscordBypass"
-$LocalScriptPath = "$LocalScriptDir\DiscordBypass.ps1"
+$GitHubScriptUrl = "https://raw.githubusercontent.com/CatSema/Club-Anti-Zapret/refs/heads/main/DiscordEnhancedConnectivity.ps1"
+$LocalScriptDir = "$env:LOCALAPPDATA\DiscordEnhancedConnectivity"
+$LocalScriptPath = "$LocalScriptDir\DiscordEnhancedConnectivity.ps1"
 $DesktopPath = [Environment]::GetFolderPath("Desktop")
 $ShortcutPath = "$DesktopPath\Discord.lnk"
 $PowerShellPath = "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe"
 
-Write-Host "=== Discord Bypass Setup ===" -ForegroundColor Cyan
+Write-Host "=== Discord Enhanced Connectivity Setup ===" -ForegroundColor Cyan
 
 # Step 1: Create directory if it doesn't exist
 Write-Host "`n[1/5] Creating script directory..." -ForegroundColor Yellow
@@ -18,7 +18,7 @@ if (!(Test-Path $LocalScriptDir)) {
 }
 
 # Step 2: Download script from GitHub
-Write-Host "`n[2/5] Downloading DiscordBypass.ps1 from GitHub..." -ForegroundColor Yellow
+Write-Host "`n[2/5] Downloading DiscordEnhancedConnectivity.ps1 from GitHub..." -ForegroundColor Yellow
 try {
     Invoke-WebRequest -Uri $GitHubScriptUrl -OutFile $LocalScriptPath -UseBasicParsing -TimeoutSec 30
 
@@ -125,7 +125,7 @@ try {
     $Shortcut.TargetPath = $PowerShellPath
     $Shortcut.Arguments = "-WindowStyle Hidden -ExecutionPolicy Bypass -File `"$LocalScriptPath`""
     $Shortcut.WorkingDirectory = $LocalScriptDir
-    $Shortcut.Description = "Discord with bypass"
+    $Shortcut.Description = "Discord with enhanced connectivity"
     $Shortcut.IconLocation = "$DiscordIconPath, $iconIndex"
 
     # Save shortcut

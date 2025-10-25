@@ -1,14 +1,14 @@
-﻿# PowerShell script for launching Discord with restrictions bypass
-# Architecture: automatic download, launch and bypass completion
+﻿# PowerShell script for launching Discord with enhanced connectivity
+# Architecture: automatic download, launch and connectivity enhancement completion
 # Version: zapret-discord-youtube-1.8.5
 
 param(
     [string]$DiscordPath = $null,
-    [string]$BypassScript = "general (FAKE TLS AUTO).bat"
+    [string]$ConnectivityScript = "general (FAKE TLS AUTO).bat"
 )
 
 # Adding duplicate protection
-$mutexName = "DiscordBypass_SingleInstance"
+$mutexName = "DiscordEnhancedConnectivity_SingleInstance"
 $mutex = New-Object System.Threading.Mutex($false, $mutexName)
 
 if (!$mutex.WaitOne(100)) {
@@ -18,7 +18,7 @@ if (!$mutex.WaitOne(100)) {
 
 # Configuration
 $ReleaseUrl = "https://github.com/Flowseal/zapret-discord-youtube/releases/download/1.8.5/zapret-discord-youtube-1.8.5.zip"
-$TempDir = Join-Path $env:TEMP "DiscordBypass_$(Get-Date -Format 'yyyyMMdd')"
+$TempDir = Join-Path $env:TEMP "DiscordEnhancedConnectivity_$(Get-Date -Format 'yyyyMMdd')"
 $ZipPath = Join-Path $TempDir "zapret-discord-youtube-1.8.5.zip"
 $ExtractDir = Join-Path $TempDir "zapret-discord-youtube-1.8.5"
 
@@ -285,11 +285,11 @@ function WaitForDiscordTermination {
     return $false
 }
 
-# Function to wait for bypass-related processes to fully terminate
-function WaitForBypassTermination {
-    param([int]$BypassProcessId)
+# Function to wait for connectivity-related processes to fully terminate
+function WaitForConnectivityTermination {
+    param([int]$ConnectivityProcessId)
     
-    Write-LogMessage "Waiting for bypass processes to fully terminate..." "INFO"
+    Write-LogMessage "Waiting for connectivity processes to fully terminate..." "INFO"
     
     $maxWaitTime = 30  # Maximum wait time in seconds
     $waitedTime = 0
@@ -298,50 +298,50 @@ function WaitForBypassTermination {
     while ($waitedTime -lt $maxWaitTime) {
         $bypassRunning = $false
         
-        # Check if the main bypass process is still running
-        if ($BypassProcessId) {
-            try {
-                $bypassProc = Get-Process -Id $BypassProcessId -ErrorAction Stop
-                if (!$bypassProc.HasExited) {
-                    $bypassRunning = $true
-                    Write-LogMessage "Main bypass process (ID: $BypassProcessId) still running" "INFO"
-                }
-            }
-            catch {
-                # Process already terminated
-            }
-        }
-        
-        # Check for any bypass processes from the extract directory (excluding Discord processes)
-        $extractDirProcs = Get-Process | Where-Object {
-            $_.Path -and $_.Path.StartsWith($ExtractDir, 'OrdinalIgnoreCase') -and $_.ProcessName -notmatch "^Discord(\.exe)?$" -and !$_.HasExited
-        }
-        
-        if ($extractDirProcs) {
-            $bypassRunning = $true
-            Write-LogMessage "Found $($extractDirProcs.Count) bypass-related processes still running from extract directory" "INFO"
-        }
-        
-        # Check for WinDivert-related processes (excluding Discord processes)
-        $divertProcs = Get-Process | Where-Object {
-            $_.ProcessName -match "divert|WinDivert|zapret" -and $_.ProcessName -notmatch "^Discord(\.exe)?$" -and !$_.HasExited
-        }
-        
-        if ($divertProcs) {
-            $bypassRunning = $true
-            Write-LogMessage "Found $($divertProcs.Count) WinDivert-related processes still running" "INFO"
-        }
-        
-        if (!$bypassRunning) {
-            Write-LogMessage "All bypass-related processes have terminated" "INFO"
-            return $true
-        }
+        # Check if the main connectivity process is still running
+        if ($ConnectivityProcessId) {
+                            try {
+                                $connectivityProc = Get-Process -Id $ConnectivityProcessId -ErrorAction Stop
+                                if (!$connectivityProc.HasExited) {
+                                    $connectivityRunning = $true
+                                    Write-LogMessage "Main connectivity process (ID: $ConnectivityProcessId) still running" "INFO"
+                                }
+                            }
+                            catch {
+                                # Process already terminated
+                            }
+                        }
+                        
+                        # Check for any connectivity processes from the extract directory (excluding Discord processes)
+                        $extractDirProcs = Get-Process | Where-Object {
+                            $_.Path -and $_.Path.StartsWith($ExtractDir, 'OrdinalIgnoreCase') -and $_.ProcessName -notmatch "^Discord(\.exe)?$" -and !$_.HasExited
+                        }
+                        
+                        if ($extractDirProcs) {
+                            $connectivityRunning = $true
+                            Write-LogMessage "Found $($extractDirProcs.Count) connectivity-related processes still running from extract directory" "INFO"
+                        }
+                        
+                        # Check for WinDivert-related processes (excluding Discord processes)
+                        $divertProcs = Get-Process | Where-Object {
+                            $_.ProcessName -match "divert|WinDivert|zapret" -and $_.ProcessName -notmatch "^Discord(\.exe)?$" -and !$_.HasExited
+                        }
+                        
+                        if ($divertProcs) {
+                            $connectivityRunning = $true
+                            Write-LogMessage "Found $($divertProcs.Count) WinDivert-related processes still running" "INFO"
+                        }
+                        
+                        if (!$connectivityRunning) {
+                            Write-LogMessage "All connectivity-related processes have terminated" "INFO"
+                            return $true
+                        }
         
         Start-Sleep -Seconds $checkInterval
         $waitedTime += $checkInterval
     }
     
-    Write-LogMessage "Timeout waiting for bypass processes to terminate" "WARN"
+    Write-LogMessage "Timeout waiting for connectivity processes to terminate" "WARN"
     return $false
 }
 
@@ -497,84 +497,84 @@ $notificationForm = $null
 Show-ModalNotification -Message "Подготавливаем Discord к запуску..." -FormReference ([ref]$notificationForm)
 
 try {
-    # Check for and terminate any existing bypass processes before starting new ones
+    # Check for and terminate any existing connectivity processes before starting new ones
     Write-LogMessage "Checking for existing bypass processes..." "INFO"
     
-    # Find and terminate any existing bypass-related processes
-    $existingBypassProcs = Get-Process | Where-Object {
-        $_.ProcessName -match "winws|zapret|divert|WinDivert|windivert" -or
-        ($_.Path -and $_.Path -match "\\zapret|\\windivert")
-    }
-    
-    if ($existingBypassProcs) {
-        Write-LogMessage "Found $($existingBypassProcs.Count) existing bypass processes (PID: $($existingBypassProcs.Id -join ', '))" "WARN"
-        Write-LogMessage "Force closing existing bypass processes..." "INFO"
-        
-        $existingBypassProcs | ForEach-Object {
-            $proc = $_
-            try {
-                # Check if process has already exited before attempting to terminate
-                if (!$proc.HasExited) {
-                    Write-LogMessage "Closing bypass process (ID: $($proc.Id), Name: $($proc.ProcessName))" "INFO"
-                    $proc.CloseMainWindow()
-                } else {
-                    Write-LogMessage "Bypass process (ID: $($proc.Id)) already terminated" "INFO"
-                }
-            }
-            catch {
-                Write-LogMessage "Error closing bypass process (ID: $($proc.Id)): $($_.Exception.Message)" "WARN"
-            }
+    # Find and terminate any existing connectivity-related processes
+    $existingConnectivityProcs = Get-Process | Where-Object {
+            $_.ProcessName -match "winws|zapret|divert|WinDivert|windivert" -or
+            ($_.Path -and $_.Path -match "\\zapret|\\windivert")
         }
         
-        Start-Sleep 3  # Wait to allow processes to close gracefully
-        
-        # Double-check that processes have actually closed
-        $stillRunning = $existingBypassProcs | Where-Object {
-            try {
-                $p = Get-Process -Id $_.Id -ErrorAction Stop
-                return !$p.HasExited
-            }
-            catch {
-                # Process no longer exists
-                return $false
-            }
-        }
-        
-        if ($stillRunning) {
-            Write-LogMessage "Some bypass processes did not close gracefully, attempting force termination" "WARN"
-            $stillRunning | ForEach-Object {
+        if ($existingConnectivityProcs) {
+            Write-LogMessage "Found $($existingConnectivityProcs.Count) existing connectivity processes (PID: $($existingConnectivityProcs.Id -join ', '))" "WARN"
+            Write-LogMessage "Force closing existing connectivity processes..." "INFO"
+            
+            $existingConnectivityProcs | ForEach-Object {
                 $proc = $_
                 try {
                     # Check if process has already exited before attempting to terminate
                     if (!$proc.HasExited) {
-                        $proc.Kill()
-                        Write-LogMessage "Force terminated bypass process (ID: $($proc.Id), Name: $($proc.ProcessName))" "INFO"
+                        Write-LogMessage "Closing connectivity process (ID: $($proc.Id), Name: $($proc.ProcessName))" "INFO"
+                        $proc.CloseMainWindow()
                     } else {
-                        Write-LogMessage "Bypass process (ID: $($proc.Id)) already terminated" "INFO"
+                        Write-LogMessage "Connectivity process (ID: $($proc.Id)) already terminated" "INFO"
                     }
                 }
                 catch {
-                    Write-LogMessage "Failed to terminate bypass process (ID: $($proc.Id))" "WARN"
-                    # If Kill() fails, try Stop-Process as fallback
-                    try {
-                        Stop-Process -Id $proc.Id -Force -ErrorAction Stop
-                        Write-LogMessage "Force terminated bypass process using Stop-Process (ID: $($proc.Id))" "INFO"
-                    }
-                    catch {
-                        Write-LogMessage "Failed to terminate bypass process with Stop-Process (ID: $($proc.Id))" "WARN"
-                    }
+                    Write-LogMessage "Error closing connectivity process (ID: $($proc.Id)): $($_.Exception.Message)" "WARN"
                 }
             }
-            Start-Sleep 2
-        }
         
-        Write-LogMessage "Existing bypass processes terminated" "INFO"
-    } else {
-        Write-LogMessage "No existing bypass processes found" "INFO"
-    }
+        Start-Sleep 3  # Wait to allow processes to close gracefully
+        
+        # Double-check that processes have actually closed
+                $stillRunning = $existingConnectivityProcs | Where-Object {
+                    try {
+                        $p = Get-Process -Id $_.Id -ErrorAction Stop
+                        return !$p.HasExited
+                    }
+                    catch {
+                        # Process no longer exists
+                        return $false
+                    }
+                }
+                
+                if ($stillRunning) {
+                    Write-LogMessage "Some connectivity processes did not close gracefully, attempting force termination" "WARN"
+                    $stillRunning | ForEach-Object {
+                        $proc = $_
+                        try {
+                            # Check if process has already exited before attempting to terminate
+                            if (!$proc.HasExited) {
+                                $proc.Kill()
+                                Write-LogMessage "Force terminated connectivity process (ID: $($proc.Id), Name: $($proc.ProcessName))" "INFO"
+                            } else {
+                                Write-LogMessage "Connectivity process (ID: $($proc.Id)) already terminated" "INFO"
+                            }
+                        }
+                        catch {
+                            Write-LogMessage "Failed to terminate connectivity process (ID: $($proc.Id))" "WARN"
+                            # If Kill() fails, try Stop-Process as fallback
+                            try {
+                                Stop-Process -Id $proc.Id -Force -ErrorAction Stop
+                                Write-LogMessage "Force terminated connectivity process using Stop-Process (ID: $($proc.Id))" "INFO"
+                            }
+                            catch {
+                                Write-LogMessage "Failed to terminate connectivity process with Stop-Process (ID: $($proc.Id))" "WARN"
+                            }
+                        }
+                    }
+                    Start-Sleep 2
+                }
+                
+                Write-LogMessage "Existing connectivity processes terminated" "INFO"
+            } else {
+                Write-LogMessage "No existing connectivity processes found" "INFO"
+            }
 
     # Download archive
-    Write-LogMessage "Downloading bypass archive..." "INFO"
+    Write-LogMessage "Downloading connectivity enhancement archive..." "INFO"
     try {
         # Check URL availability
         $request = [System.Net.WebRequest]::Create($ReleaseUrl)
@@ -643,17 +643,17 @@ try {
         throw "Archive contains no files or was not extracted correctly"
     }
 
-    # Launch bypass script in background mode
-    Write-LogMessage "Launching bypass script..." "INFO"
-    $bypassScriptPath = Join-Path $ExtractDir $BypassScript
+    # Launch connectivity script in background mode
+    Write-LogMessage "Launching connectivity script..." "INFO"
+    $connectivityScriptPath = Join-Path $ExtractDir $ConnectivityScript
     
-    if (!(Test-Path $bypassScriptPath)) {
-        throw "Bypass script not found: $bypassScriptPath"
-    }
+    if (!(Test-Path $connectivityScriptPath)) {
+            throw "Connectivity script not found: $connectivityScriptPath"
+        }
 
     # Modify batch file for hidden execution
     Write-LogMessage "Preparing batch file for hidden execution..." "INFO"
-    $modifyResult = Modify-BatchFileForHiddenExecution -BatchFilePath $bypassScriptPath
+    $modifyResult = Modify-BatchFileForHiddenExecution -BatchFilePath $connectivityScriptPath
     if (!$modifyResult) {
         Write-LogMessage "Failed to modify batch file, continuing with default execution" "WARN"
     }
@@ -661,7 +661,7 @@ try {
     # Launch bypass in background mode without window display
     $processInfo = New-Object System.Diagnostics.ProcessStartInfo
     $processInfo.FileName = "cmd.exe"
-    $processInfo.Arguments = "/c `"$bypassScriptPath`""
+    $processInfo.Arguments = "/c `"$connectivityScriptPath`""
     $processInfo.WorkingDirectory = $ExtractDir
     $processInfo.UseShellExecute = $false
     $processInfo.CreateNoWindow = $true
@@ -669,23 +669,23 @@ try {
     $processInfo.RedirectStandardError = $true
 
     try {
-        $bypassProcess = [System.Diagnostics.Process]::Start($processInfo)
-        
-        # Save process ID for more accurate tracking
-        $bypassProcessId = $bypassProcess.Id
-        Write-LogMessage "Bypass process launched with ID: $bypassProcessId" "INFO"
+        $connectivityProcess = [System.Diagnostics.Process]::Start($processInfo)
+                
+                # Save process ID for more accurate tracking
+                $connectivityProcessId = $connectivityProcess.Id
+                Write-LogMessage "Connectivity process launched with ID: $connectivityProcessId" "INFO"
     }
     catch {
         Write-LogMessage "Error launching bypass script: $($_.Exception.Message)" "ERROR"
         throw "Error launching bypass script: $($_.Exception.Message)"
     }
 
-    # Wait for bypass initialization
-    Write-LogMessage "Waiting for bypass initialization..." "INFO"
+    # Wait for connectivity initialization
+    Write-LogMessage "Waiting for connectivity initialization..." "INFO"
     
-    # Check that bypass process is still running
-    if (!$bypassProcess.HasExited) {
-        Write-LogMessage "Bypass process is running, waiting for initialization..." "INFO"
+    # Check that connectivity process is still running
+    if (!$connectivityProcess.HasExited) {
+        Write-LogMessage "Connectivity process is running, waiting for initialization..." "INFO"
         
         # Wait up to 60 seconds or until initialization signal (increased from 30)
         $initComplete = $false
@@ -698,43 +698,43 @@ try {
             $waitedTime += $checkInterval
             
             # Check if process is still running
-            if ($bypassProcess.HasExited) {
-                # Process might have exited but system services could still be running
-                # Check if bypass is actually initialized despite process exit
-                $initComplete = Test-ZapretInitialized -ExtractDir $ExtractDir -ProcessId $bypassProcessId
-                if ($initComplete) {
-                    Write-LogMessage "Bypass initialized but process terminated (system services running)" "INFO"
-                } else {
-                    Write-Warning "Bypass process terminated before initialization completed"
-                }
+                        if ($connectivityProcess.HasExited) {
+                            # Process might have exited but system services could still be running
+                            # Check if connectivity is actually initialized despite process exit
+                            $initComplete = Test-ZapretInitialized -ExtractDir $ExtractDir -ProcessId $connectivityProcessId
+                            if ($initComplete) {
+                                Write-LogMessage "Connectivity initialized but process terminated (system services running)" "INFO"
+                            } else {
+                                Write-Warning "Connectivity process terminated before initialization completed"
+                            }
                 break
             }
             
             # Use improved initialization check function
-            $initComplete = Test-ZapretInitialized -ExtractDir $ExtractDir -ProcessId $bypassProcessId
+                        $initComplete = Test-ZapretInitialized -ExtractDir $ExtractDir -ProcessId $connectivityProcessId
             
             if ($initComplete) {
-                Write-LogMessage "Bypass initialized in $($waitedTime) seconds" "INFO"
+                Write-LogMessage "Connectivity initialized in $($waitedTime) seconds" "INFO"
             }
         }
         
         if (!$initComplete) {
-            Write-LogMessage "Bypass initialization timeout ($maxWaitTime seconds)" "WARN"
-            # Check one more time if bypass is actually working despite timeout
-            $initComplete = Test-ZapretInitialized -ExtractDir $ExtractDir -ProcessId $bypassProcessId
-            if ($initComplete) {
-                Write-LogMessage "Bypass is active despite timeout" "INFO"
-            } else {
-                Write-LogMessage "Bypass might not be active, continuing anyway" "WARN"
-            }
-        }
+                    Write-LogMessage "Connectivity initialization timeout ($maxWaitTime seconds)" "WARN"
+                    # Check one more time if connectivity is actually working despite timeout
+                    $initComplete = Test-ZapretInitialized -ExtractDir $ExtractDir -ProcessId $connectivityProcessId
+                    if ($initComplete) {
+                        Write-LogMessage "Connectivity is active despite timeout" "INFO"
+                    } else {
+                        Write-LogMessage "Connectivity might not be active, continuing anyway" "WARN"
+                    }
+                }
     } else {
-        Write-LogMessage "Bypass process terminated earlier than expected" "WARN"
-        # Check if bypass is still active despite process exit
-        $initComplete = Test-ZapretInitialized -ExtractDir $ExtractDir -ProcessId $bypassProcessId
-        if ($initComplete) {
-            Write-LogMessage "Bypass services still active despite process exit" "INFO"
-        }
+        Write-LogMessage "Connectivity process terminated earlier than expected" "WARN"
+                # Check if connectivity is still active despite process exit
+                $initComplete = Test-ZapretInitialized -ExtractDir $ExtractDir -ProcessId $connectivityProcessId
+                if ($initComplete) {
+                    Write-LogMessage "Connectivity services still active despite process exit" "INFO"
+                }
     }
 
     # Determine Discord path
@@ -874,11 +874,11 @@ try {
     $discordProcess.WaitForExit()
     Write-LogMessage "Discord finished with exit code: $($discordProcess.ExitCode)" "INFO"
     
-    # Wait for bypass processes to finish naturally after Discord closes
+    # Wait for connectivity processes to finish naturally after Discord closes
     Start-Sleep -Seconds 3
 
-    # After Discord finishes, wait a bit before terminating bypass processes
-    Write-LogMessage "Discord finished, preparing to terminate bypass..." "INFO"
+    # After Discord finishes, wait a bit before terminating connectivity processes
+    Write-LogMessage "Discord finished, preparing to terminate connectivity..." "INFO"
     Start-Sleep -Seconds 2
 }
 catch {
@@ -894,34 +894,34 @@ catch {
     throw
 }
 finally {
-    # Terminate bypass process if it's still running
-    if ($bypassProcess) {
-        try {
-            # Check if process has already exited before attempting to terminate
-            if (!$bypassProcess.HasExited) {
-                # First, try graceful termination
-                $bypassProcess.CloseMainWindow()
-                if (!$bypassProcess.WaitForExit(5000)) {
-                    # If graceful termination fails, force kill
-                    $bypassProcess.Kill()
-                    $bypassProcess.WaitForExit(200)
-                }
-            }
-        }
-        catch {
-            # Try to terminate process via system command
+    # Terminate connectivity process if it's still running
+    if ($connectivityProcess) {
             try {
-                # Check if process still exists before attempting to stop
-                if ($bypassProcessId -and (Get-Process -Id $bypassProcessId -ErrorAction SilentlyContinue)) {
-                    Stop-Process -Id $bypassProcessId -Force -ErrorAction Stop
+                # Check if process has already exited before attempting to terminate
+                if (!$connectivityProcess.HasExited) {
+                    # First, try graceful termination
+                    $connectivityProcess.CloseMainWindow()
+                    if (!$connectivityProcess.WaitForExit(5000)) {
+                        # If graceful termination fails, force kill
+                        $connectivityProcess.Kill()
+                        $connectivityProcess.WaitForExit(200)
+                    }
                 }
             }
             catch {
+                # Try to terminate process via system command
+                try {
+                    # Check if process still exists before attempting to stop
+                    if ($connectivityProcessId -and (Get-Process -Id $connectivityProcessId -ErrorAction SilentlyContinue)) {
+                        Stop-Process -Id $connectivityProcessId -Force -ErrorAction Stop
+                    }
+                }
+                catch {
+                }
             }
         }
-    }
     
-    # Check for and terminate any WinDivert-related bypass processes (excluding Discord)
+    # Check for and terminate any WinDivert-related connectivity processes (excluding Discord)
     $divertProcs = Get-Process | Where-Object {
         $_.ProcessName -match "divert|WinDivert|zapret" -and $_.ProcessName -notmatch "^Discord(\.exe)?$"
     }
