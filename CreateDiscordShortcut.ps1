@@ -35,6 +35,40 @@ try {
     exit 1
 }
 
+# Function to check and convert file encoding to UTF-8 with BOM if necessary
+function Convert-ToUTF8WithBOM {
+    param(
+        [string]$FilePath
+    )
+    
+    # Read the file as bytes to check for BOM
+    $bytes = [System.IO.File]::ReadAllBytes($FilePath)
+    
+    # Check if file starts with UTF-8 BOM (0xEF, 0xBB, 0xBF)
+    $hasBOM = ($bytes.Length -ge 3) -and
+              ($bytes[0] -eq 0xEF) -and
+              ($bytes[1] -eq 0xBB) -and
+              ($bytes[2] -eq 0xBF)
+    
+    if (-not $hasBOM) {
+        Write-Host "[INFO] File is not encoded in UTF-8 with BOM, converting..." -ForegroundColor Yellow
+        
+        # Read the content with auto-detection of encoding
+        $content = Get-Content -Path $FilePath -Encoding UTF8 -Raw
+        
+        # Write the content back with UTF-8 BOM
+        [System.IO.File]::WriteAllText($FilePath, $content, [System.Text.Encoding]::UTF8)
+        
+        Write-Host "[OK] File converted to UTF-8 with BOM: $FilePath" -ForegroundColor Green
+    } else {
+        Write-Host "[OK] File is already encoded in UTF-8 with BOM: $FilePath" -ForegroundColor Green
+    }
+}
+
+# Check and convert encoding if necessary
+Write-Host "`n[2.5/5] Checking file encoding..." -ForegroundColor Yellow
+Convert-ToUTF8WithBOM -FilePath $LocalScriptPath
+
 # Step 3: Remove existing Discord shortcut
 Write-Host "`n[3/5] Removing existing Discord shortcut..." -ForegroundColor Yellow
 if (Test-Path $ShortcutPath) {
