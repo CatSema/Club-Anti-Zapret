@@ -18,14 +18,14 @@ if (!$mutex.WaitOne(100)) {
 
 # Configuration
 $ReleaseUrl = "https://github.com/Flowseal/zapret-discord-youtube/releases/download/1.8.5/zapret-discord-youtube-1.8.5.zip"
-$TempDir = Join-Path $env:TEMP "DiscordBypass_$(Get-Date -Format 'yyyyMMdd_HHmmss')"
+$TempDir = Join-Path $env:TEMP "DiscordBypass_$(Get-Date -Format 'yyyyMMdd')"
 $ZipPath = Join-Path $TempDir "zapret-discord-youtube-1.8.5.zip"
 $ExtractDir = Join-Path $TempDir "zapret-discord-youtube-1.8.5"
 
 # Function to create and show modal notification with Discord dark theme and modern design
 function Show-ModalNotification {
     param(
-        [string]$Message = "Подготовка Discord к запуску...",
+        [string]$Message = "Подготавливаем Discord к запуску...",
         [ref]$FormReference
     )
     
@@ -494,7 +494,7 @@ $ErrorActionPreference = "Stop"
 
 # Show modal notification at the very beginning
 $notificationForm = $null
-Show-ModalNotification -Message "Подготовка Discord к запуску..." -FormReference ([ref]$notificationForm)
+Show-ModalNotification -Message "Подготавливаем Discord к запуску..." -FormReference ([ref]$notificationForm)
 
 try {
     # Check for and terminate any existing bypass processes before starting new ones
